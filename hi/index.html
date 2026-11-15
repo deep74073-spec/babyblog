@@ -120,5 +120,84 @@
       <p>© 2026 BabyBlog. All rights reserved.</p>
     </div>
   </footer>
+
+<script>
+(function () {
+  const section = document.querySelector("#articles");
+  if (!section) return;
+
+  const container = section.querySelector(".container");
+  if (!container) return;
+
+  const cards = Array.from(container.querySelectorAll(":scope > .article-card"));
+  const perPage = 3;
+  const totalPages = Math.ceil(cards.length / perPage);
+  const params = new URLSearchParams(window.location.search);
+  let currentPage = parseInt(params.get("page") || "1", 10);
+
+  if (!Number.isFinite(currentPage)) currentPage = 1;
+  currentPage = Math.max(1, Math.min(currentPage, Math.max(1, totalPages)));
+
+  const pagination = document.createElement("nav");
+  pagination.className = "article-pagination";
+  pagination.setAttribute("aria-label", "लेख के पेज");
+  container.appendChild(pagination);
+
+  function renderPage(page, updateUrl) {
+    currentPage = page;
+
+    cards.forEach((card, index) => {
+      card.hidden = index < (page - 1) * perPage || index >= page * perPage;
+    });
+
+    pagination.replaceChildren();
+
+    function addLink(label, target, current) {
+      const link = document.createElement("a");
+      link.textContent = label;
+      link.href = "?page=" + target + "#articles";
+
+      if (current) {
+        link.setAttribute("aria-current", "page");
+        link.className = "current";
+      }
+
+      link.addEventListener("click", function (event) {
+        event.preventDefault();
+        renderPage(target, true);
+        document.getElementById("articles").scrollIntoView({ behavior: "smooth" });
+      });
+
+      pagination.appendChild(link);
+    }
+
+    if (totalPages > 1) {
+      if (page > 1) addLink("← पिछला", page - 1, false);
+
+      for (let number = 1; number <= totalPages; number++) {
+        addLink(String(number), number, number === page);
+      }
+
+      if (page < totalPages) addLink("अगला →", page + 1, false);
+    }
+
+    if (updateUrl) {
+      const url = new URL(window.location.href);
+      if (page === 1) url.searchParams.delete("page");
+      else url.searchParams.set("page", page);
+      url.hash = "articles";
+      history.pushState({ page: page }, "", url);
+    }
+  }
+
+  window.addEventListener("popstate", function () {
+    const page = parseInt(new URLSearchParams(window.location.search).get("page") || "1", 10);
+    renderPage(Math.max(1, Math.min(Number.isFinite(page) ? page : 1, Math.max(1, totalPages))), false);
+  });
+
+  renderPage(currentPage, false);
+})();
+</script>
+
 </body>
 </html>
